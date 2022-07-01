@@ -1,0 +1,929 @@
+---
+title: "STATS 787 Lab10"
+author: "Emma Wang"
+date: '2022-05-22'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(grid)
+library(ragg)
+```
+
+# The Data Set
+
+```{r}
+# Read in data
+curve <- read.csv("vaccine-rollout.csv")
+head(curve)
+```
+
+```{r}
+# Colours
+
+## fill for plot area
+purple1 <- "#f7f7fa"
+## fill for text boxes
+purple2 <- "#d6d5e7"
+## filled area at left end of curve
+purple3 <- "#d2d1e4"
+## diagonal hash under rest of curve
+purple4 <- "#ebeaf3"
+## vertical lines including y-axis line
+purple5 <- "#c5c3dc"
+## tick marks
+purple6 <- "#dbd9e9"
+## fill for dots-with-numbers and x axis lines and page border
+purple7 <- "#adaace"
+## line for curve itself
+purple8 <- "#bebcd8"
+```
+
+# Data Visualization
+
+**1.** Write R code to produce the image below.
+
+Create a plot region viewport that is 0.6 of the width and 0.8 of the height of the page and has x- and y-scales based on the range of the data.
+
+Fill the plot region and draw lines on the left, right, and bottom edges and add tick marks and tick labels. Use a font size of 8pt.
+
+NOTE that the thick line at the bottom of the plot has its bottom edge at the bottom of the plot region.
+
+```{r}
+grid.newpage()
+# New viewport
+pushViewport(viewport(width = 0.6, height = 0.8, yscale = c(0, 9.5e6), 
+                      xscale = c(0, 9)))
+# Fill in the plotting region
+grid.rect(gp = gpar(fill = purple1, col = NA))
+# Vertical lines
+grid.segments(x0 = c(0,1), y0 = 0, x1 = c(0,1), y1 = 1, 
+              gp = gpar(col = purple5))
+# Line at bottom
+grid.segments(x0 = 0, y0 = 0, x1 = 1, y1 = 0, 
+              gp = gpar(col = purple7, lwd = 4, lineend = "butt"))
+
+# Another Viewport
+popViewport(n = 0)
+pushViewport(viewport(x = 0.2, y = 0.1, width = 0.1, height = 0.8, 
+                      just = c("right", "bottom"), 
+                      # Create a scale
+                      yscale = c(0, 9.5e6)))
+
+y_pos <- 0:8 * 1e6
+# Tick marks on y-axis
+grid.segments(x0 = unit(1, "npc") - unit(4, "mm"), y0 = unit(y_pos, "native"),
+              x1 = unit(1, "npc") - unit(2, "mm"), y1 = unit(y_pos, "native"), 
+              gp = gpar(col = purple6))
+# y-axis labels
+y_lab <- format(y_pos, big.mark=",", scientific = F)
+grid.text(y_lab, x = unit(1, "npc") - unit(6, "mm"), y = unit(y_pos, "native"),
+          just = c("right", "center"), gp = gpar(fontsize = 8))
+
+
+
+# Another Viewport
+popViewport(n = 0)
+pushViewport(viewport(x = 0.2, y = 0.1, width = 0.6, height = 0.1, 
+                      just = c("left", "top")))
+
+x_tick_pos <- seq(0,1,length.out = 10)
+# Tick marks on y-axis
+grid.segments(x0 = unit(x_tick_pos, "native"),y0 =unit(1, "npc")-unit(4, "mm"), 
+              x1 = unit(x_tick_pos, "native"),y1 =unit(1, "npc")-unit(2, "mm"),
+              gp = gpar(col = purple6))
+# x-axis labels
+x_lab <- month.abb[4:12]
+x_lab_pos <- seq(mean(x_tick_pos[1:2]), mean(x_tick_pos[9:10]), length.out = 9)
+grid.text(x_lab, x = unit(x_lab_pos, "native"), 
+          y = unit(1, "npc") - unit(3, "mm"),
+          just = c("center", "top"), gp = gpar(fontsize = 8))
+
+# Year label
+grid.text(2021, x = x_lab_pos[1], 
+          y = unit(1, "npc") - unit(6, "mm"),
+          just = c("center", "top"), gp = gpar(fontsize = 8, fontface = "bold"))
+```
+
+
+
+## Shapes
+**2. ** Write R code to produce the image below.  
+
+Add a solid line along the top of the left part of the curve within the plot
+region and fill the area below that solid line.  
+
+Add two vertical lines and draw a rounded rectangle that is top-aligned with the top of each vertical line and 2mm to the right of each vertical line. Make the rounded rectangles 2cm wide and 1cm high.  
+
+Draw the COVID logo in the bottom-right corner (1 inch wide). The COVID-19 logo is from the Covid19.govt.nz website and is owned by the Crown, but is CC-BY-NC licenced.  
+```{r}
+library(png)
+
+grid.newpage()
+
+# logo
+logo <- readPNG("COVID-19-logo.png")
+grid.raster(logo, x = 1, y = 0, width = unit(1, "in"), 
+            just = c("right", "bottom"))
+
+
+# New viewport
+pushViewport(viewport(width = 0.6, height = 0.8, yscale = c(0, 9.5e6), 
+                      xscale = c(0, 9)))
+# Fill in the plotting region
+grid.rect(gp = gpar(fill = purple1, col = NA))
+
+# Curve
+grid.xspline(x = unit(curve$x[1:7], "native"), y = unit(curve$y[1:7], "native"),
+             shape = rep(-1, 7), gp = gpar(col = purple8))
+
+# Filled area under the curve
+grid.xspline(x = unit(c(0, curve$x[1:7], curve$x[7]), "native"), 
+             y = unit(c(0, curve$y[1:7], 0), "native"), open = F,
+             shape = c(0, 0, rep(-1, 5),0, 0), 
+             gp = gpar(fill = purple3, col = NA))
+
+# Vertical lines for axis
+grid.segments(x0 = c(0,1), y0 = 0, x1 = c(0,1), y1 = 1, 
+              gp = gpar(col = purple5))
+
+# Line at bottom
+grid.segments(x0 = 0, y0 = 0, x1 = 1, y1 = 0, 
+              gp = gpar(col = purple7, lwd = 4, lineend = "butt"))
+
+
+# Vertical lines
+grid.segments(x0 = unit(c(1,3), "native"), y0 = 0, 
+              x1 = unit(c(1,3), "native"), y1 = unit(c(4e6, 6e6), "native"), 
+              gp = gpar(col = purple5))
+
+# Rounded rectangles
+grid.roundrect(x = unit(1, "native") + unit(2, "mm"), 
+               y = unit(4e6, "native"), 
+               width = unit(2, "cm"), height = unit(1, "cm"),
+               gp = gpar(fill = purple3, col = NA), 
+               just = c("left", "top"))
+
+grid.roundrect(x = unit(3, "native") + unit(2, "mm"), 
+               y = unit(6e6, "native"), 
+               width = unit(2, "cm"), height = unit(1, "cm"),
+               gp = gpar(fill = purple3, col = NA), 
+               just = c("left", "top"))
+
+
+# Another Viewport
+popViewport(n = 0)
+pushViewport(viewport(x = 0.2, y = 0.1, width = 0.1, height = 0.8, 
+                      just = c("right", "bottom"), 
+                      # Create a scale
+                      yscale = c(0, 9.5e6)))
+
+y_pos <- 0:8 * 1e6
+# Tick marks on y-axis
+grid.segments(x0 = unit(1, "npc") - unit(4, "mm"), y0 = unit(y_pos, "native"),
+              x1 = unit(1, "npc") - unit(2, "mm"), y1 = unit(y_pos, "native"), 
+              gp = gpar(col = purple6))
+# y-axis labels
+y_lab <- format(y_pos, big.mark=",", scientific = F)
+grid.text(y_lab, x = unit(1, "npc") - unit(6, "mm"), y = unit(y_pos, "native"),
+          just = c("right", "center"), gp = gpar(fontsize = 8))
+
+
+
+# Another Viewport
+popViewport(n = 0)
+pushViewport(viewport(x = 0.2, y = 0.1, width = 0.6, height = 0.1, 
+                      just = c("left", "top")))
+
+x_tick_pos <- seq(0,1,length.out = 10)
+# Tick marks on y-axis
+grid.segments(x0 = unit(x_tick_pos, "native"),y0 =unit(1, "npc")-unit(4, "mm"), 
+              x1 = unit(x_tick_pos, "native"),y1 =unit(1, "npc")-unit(2, "mm"),
+              gp = gpar(col = purple6))
+# x-axis labels
+x_lab <- month.abb[4:12]
+x_lab_pos <- seq(mean(x_tick_pos[1:2]), mean(x_tick_pos[9:10]), length.out = 9)
+grid.text(x_lab, x = unit(x_lab_pos, "native"), 
+          y = unit(1, "npc") - unit(3, "mm"),
+          just = c("center", "top"), gp = gpar(fontsize = 8))
+
+# Year label
+grid.text(2021, x = x_lab_pos[1], 
+          y = unit(1, "npc") - unit(6, "mm"),
+          just = c("center", "top"), gp = gpar(fontsize = 8, fontface = "bold"))
+```
+
+
+## Graphical parameters
+**3. ** Write R code to produce the image below.  
+
+Add a dashed line on top of the rest of the curve and a hashed line pattern fill beneath that part of the curve.  
+
+NOTE that the dashed line has longer dashes and longer gaps than is produced by just `lty="dashed"`.
+
+1. Graphical device
+2. Check pattern using a large rectangle
+```{r dev = 'ragg_png'}
+grid.newpage()
+
+# logo
+grid.raster(logo, x = 1, y = 0, width = unit(1, "in"), 
+            just = c("right", "bottom"))
+
+
+# New viewport
+pushViewport(viewport(width = 0.6, height = 0.8, yscale = c(0, 9.5e6), 
+                      xscale = c(0, 9)))
+# Fill in the plotting region
+grid.rect(gp = gpar(fill = purple1, col = NA))
+
+# Curve before June
+grid.xspline(x = unit(curve$x[1:7], "native"), y = unit(curve$y[1:7], "native"),
+             shape = rep(-1, 7), gp = gpar(col = purple8))
+
+# Filled area under the curve
+grid.xspline(x = unit(c(0, curve$x[1:7], curve$x[7]), "native"), 
+             y = unit(c(0, curve$y[1:7], 0), "native"), open = F,
+             shape = c(0, 0, rep(-1, 5),0, 0), 
+             gp = gpar(fill = purple3, col = NA))
+
+# Curve after June
+grid.xspline(x = unit(curve$x[7:19], "native"), 
+             y = unit(curve$y[7:19], "native"), shape = rep(-1, length(7:19)), 
+             gp = gpar(col = purple8, lty = "dashed"))
+
+# Filled area under the curve
+tile <- pattern(linesGrob(x = c(0, 1), y = c(0, 1), 
+                             gp = gpar(col = purple4)), 
+                width = 0.02, height = 0.02, extend = "repeat")
+
+grid.xspline(x = unit(c(curve$x[7], curve$x[7:19], curve$x[19]), "native"), 
+             y = unit(c(0, curve$y[7:19], 0), "native"), open = F,
+             shape = c(0, 0, rep(-1, length(7:19)-2),0, 0), 
+             gp = gpar(fill = tile, col = NA))
+
+
+
+# Vertical lines for axis
+grid.segments(x0 = c(0,1), y0 = 0, x1 = c(0,1), y1 = 1, 
+              gp = gpar(col = purple5))
+
+# Line at bottom
+grid.segments(x0 = 0, y0 = 0, x1 = 1, y1 = 0, 
+              gp = gpar(col = purple7, lwd = 4, lineend = "butt"))
+
+
+# Vertical lines
+grid.segments(x0 = unit(c(1,3), "native"), y0 = 0, 
+              x1 = unit(c(1,3), "native"), y1 = unit(c(4e6, 6e6), "native"), 
+              gp = gpar(col = purple5))
+
+# Rounded rectangles
+grid.roundrect(x = unit(1, "native") + unit(2, "mm"), 
+               y = unit(4e6, "native"), 
+               width = unit(2, "cm"), height = unit(1, "cm"),
+               gp = gpar(fill = purple3, col = NA), 
+               just = c("left", "top"))
+
+grid.roundrect(x = unit(3, "native") + unit(2, "mm"), 
+               y = unit(6e6, "native"), 
+               width = unit(2, "cm"), height = unit(1, "cm"),
+               gp = gpar(fill = purple3, col = NA), 
+               just = c("left", "top"))
+
+
+
+
+# Another Viewport
+popViewport(n = 0)
+pushViewport(viewport(x = 0.2, y = 0.1, width = 0.1, height = 0.8, 
+                      just = c("right", "bottom"), 
+                      # Create a scale
+                      yscale = c(0, 9.5e6)))
+
+y_pos <- 0:8 * 1e6
+# Tick marks on y-axis
+grid.segments(x0 = unit(1, "npc") - unit(4, "mm"), y0 = unit(y_pos, "native"),
+              x1 = unit(1, "npc") - unit(2, "mm"), y1 = unit(y_pos, "native"), 
+              gp = gpar(col = purple6))
+# y-axis labels
+y_lab <- format(y_pos, big.mark=",", scientific = F)
+grid.text(y_lab, x = unit(1, "npc") - unit(6, "mm"), y = unit(y_pos, "native"),
+          just = c("right", "center"), gp = gpar(fontsize = 8))
+
+
+
+# Another Viewport
+popViewport(n = 0)
+pushViewport(viewport(x = 0.2, y = 0.1, width = 0.6, height = 0.1, 
+                      just = c("left", "top")))
+
+x_tick_pos <- seq(0,1,length.out = 10)
+# Tick marks on y-axis
+grid.segments(x0 = unit(x_tick_pos, "native"),y0 =unit(1, "npc")-unit(4, "mm"), 
+              x1 = unit(x_tick_pos, "native"),y1 =unit(1, "npc")-unit(2, "mm"),
+              gp = gpar(col = purple6))
+# x-axis labels
+x_lab <- month.abb[4:12]
+x_lab_pos <- seq(mean(x_tick_pos[1:2]), mean(x_tick_pos[9:10]), length.out = 9)
+grid.text(x_lab, x = unit(x_lab_pos, "native"), 
+          y = unit(1, "npc") - unit(3, "mm"),
+          just = c("center", "top"), gp = gpar(fontsize = 8))
+
+# Year label
+grid.text(2021, x = x_lab_pos[1], 
+          y = unit(1, "npc") - unit(6, "mm"),
+          just = c("center", "top"), gp = gpar(fontsize = 8, fontface = "bold"))
+```
+
+
+
+## Layout
+**4. ** Replace the simple viewport from previous questions with a viewport that is 2cm narrower than the page and 2cm shorter than the page and has a layout with the following properties:  
+
+* 3 rows and 3 columns.
+* The first and third rows are 1cm high.  
+* The first and third columns are 3cm wide.  
+* The middle row and the middle column take up all of the remaining space.  
+* Draw the main plot in the second row and second column.  
+
+Draw dotted rectangles to show the location of the first row and column and the third row and column.  
+
+Draw the COVID logo in the bottom-right corner of the page.  
+```{r dev='ragg_png'}
+grid.newpage()
+
+layout <- grid.layout(nrow = 3, ncol = 3, 
+                      widths = unit(c(3, 1, 3), c("cm", "null", "cm")),
+                      height = unit(c(1, 1, 1), c("cm", "null", "cm")))
+
+pushViewport(viewport(width = unit(1, "npc") - unit(2, "cm"),
+                      height = unit(1, "npc") - unit(2, "cm"), 
+                      layout = layout))
+
+
+# Another Viewport
+pushViewport(viewport(layout.pos.row = 1, layout.pos.col = 1))
+
+# Dotted rectangle
+grid.rect(gp = gpar(lty = "dotted"))
+
+
+# Another Viewport
+popViewport(n = 1)
+pushViewport(viewport(layout.pos.row = 1, layout.pos.col = 3))
+
+# Dotted rectangle
+grid.rect(gp = gpar(lty = "dotted"))
+
+
+# Another Viewport
+popViewport(n = 1)
+pushViewport(viewport(layout.pos.row = 3, layout.pos.col = 1))
+
+# Dotted rectangle
+grid.rect(gp = gpar(lty = "dotted"))
+
+
+# Another Viewport
+popViewport(n = 1)
+pushViewport(viewport(layout.pos.row = 3, layout.pos.col = 3))
+
+# Dotted rectangle
+grid.rect(gp = gpar(lty = "dotted"))
+
+
+
+
+# 2nd row, 2nd column
+popViewport(n = 1)
+pushViewport(viewport(layout.pos.row = 2, layout.pos.col = 2, 
+                     yscale = c(0, 9.5e6), xscale = c(0, 9)))
+
+# Fill in the plotting region
+grid.rect(gp = gpar(fill = purple1, col = NA))
+
+# Curve before June
+grid.xspline(x = unit(curve$x[1:7], "native"), y = unit(curve$y[1:7], "native"),
+             shape = rep(-1, 7), gp = gpar(col = purple8))
+
+# Filled area under the curve
+grid.xspline(x = unit(c(0, curve$x[1:7], curve$x[7]), "native"), 
+             y = unit(c(0, curve$y[1:7], 0), "native"), open = F,
+             shape = c(0, 0, rep(-1, 5),0, 0), 
+             gp = gpar(fill = purple3, col = NA))
+
+# Curve after June
+grid.xspline(x = unit(curve$x[7:19], "native"), 
+             y = unit(curve$y[7:19], "native"), shape = rep(-1, length(7:19)), 
+             gp = gpar(col = purple8, lty = "dashed"))
+
+# Filled area under the curve
+tile <- pattern(linesGrob(x = c(0, 1), y = c(0, 1), 
+                             gp = gpar(col = purple4)), 
+                width = 0.02, height = 0.02, extend = "repeat")
+
+grid.xspline(x = unit(c(curve$x[7], curve$x[7:19], curve$x[19]), "native"), 
+             y = unit(c(0, curve$y[7:19], 0), "native"), open = F,
+             shape = c(0, 0, rep(-1, length(7:19)-2),0, 0), 
+             gp = gpar(fill = tile, col = NA))
+
+
+
+# Vertical lines for axis
+grid.segments(x0 = c(0,1), y0 = 0, x1 = c(0,1), y1 = 1, 
+              gp = gpar(col = purple5))
+
+# Line at bottom
+grid.segments(x0 = 0, y0 = 0, x1 = 1, y1 = 0, 
+              gp = gpar(col = purple7, lwd = 4, lineend = "butt"))
+
+
+# Vertical lines
+grid.segments(x0 = unit(c(1,3), "native"), y0 = 0, 
+              x1 = unit(c(1,3), "native"), y1 = unit(c(4e6, 6e6), "native"), 
+              gp = gpar(col = purple5))
+
+# Rounded rectangles
+grid.roundrect(x = unit(1, "native") + unit(2, "mm"), 
+               y = unit(4e6, "native"), 
+               width = unit(2, "cm"), height = unit(1, "cm"),
+               gp = gpar(fill = purple3, col = NA), 
+               just = c("left", "top"))
+
+grid.roundrect(x = unit(3, "native") + unit(2, "mm"), 
+               y = unit(6e6, "native"), 
+               width = unit(2, "cm"), height = unit(1, "cm"),
+               gp = gpar(fill = purple3, col = NA), 
+               just = c("left", "top"))
+
+
+
+
+# Another Viewport
+popViewport(n = 1)
+pushViewport(viewport(layout.pos.row = 2, layout.pos.col = 1,
+                      # Create a scale
+                      yscale = c(0, 9.5e6)))
+
+y_pos <- 0:8 * 1e6
+# Tick marks on y-axis
+grid.segments(x0 = unit(1, "npc") - unit(4, "mm"), y0 = unit(y_pos, "native"),
+              x1 = unit(1, "npc") - unit(2, "mm"), y1 = unit(y_pos, "native"), 
+              gp = gpar(col = purple6))
+# y-axis labels
+y_lab <- format(y_pos, big.mark=",", scientific = F)
+grid.text(y_lab, x = unit(1, "npc") - unit(6, "mm"), y = unit(y_pos, "native"),
+          just = c("right", "center"), gp = gpar(fontsize = 8))
+
+
+
+# Another Viewport
+popViewport(n = 1)
+pushViewport(viewport(layout.pos.row = 3, layout.pos.col = 2))
+x_tick_pos <- seq(0,1,length.out = 10)
+# Tick marks on y-axis
+grid.segments(x0 = unit(x_tick_pos, "native"),y0 =unit(1, "npc")-unit(4, "mm"), 
+              x1 = unit(x_tick_pos, "native"),y1 =unit(1, "npc")-unit(2, "mm"),
+              gp = gpar(col = purple6))
+# x-axis labels
+x_lab <- month.abb[4:12]
+x_lab_pos <- seq(mean(x_tick_pos[1:2]), mean(x_tick_pos[9:10]), length.out = 9)
+grid.text(x_lab, x = unit(x_lab_pos, "native"), 
+          y = unit(1, "npc") - unit(3, "mm"),
+          just = c("center", "top"), gp = gpar(fontsize = 8))
+
+# Year label
+grid.text(2021, x = x_lab_pos[1], 
+          y = unit(1, "npc") - unit(6, "mm"),
+          just = c("center", "top"), gp = gpar(fontsize = 8, fontface = "bold"))
+
+
+# Go back to the entire plotting area
+popViewport(n=0)
+# logo
+grid.raster(logo, x = 1, y = 0, width = unit(1, "in"), 
+            just = c("right", "bottom"))
+
+```
+
+  
+Here we used `grid.layout()` to create the 3 by 3 layout and `pushViewport()` to navigate through different parts of the layout.  
+
+
+
+
+
+## Grobs
+**5. ** Replace the layout from the previous question with a more complex one that has the following properties:  
+
+* 3 columns and 6 rows  
+* The column widths are the same as the previous question.  
+* The first three row heights are based on the size of three text grobs (representing  
+* the title, sub-title, and caption above the plot) PLUS 4mm (margin).  
+* The fourth row is 0.25in high and the sixth row is 0.5in high.   
+* The fifth row takes up the remaining height.  
+
+  
+Draw the title in row 1, the subtitle in row 2, and the caption in row 3. The title and sub-title are 18pt (and the sub-title is bold).  
+
+Draw the COVID logo in the bottom-right corner.  
+
+Draw the main plot in the fifth row and second column and ADD the following features:  
+
+* A rounded rect that is 2mm in from the top-left corner of the plot, with its width and height based on the text that is drawn within it (plus 4mm for a margin).  
+* A circle, radius 3mm, that is 2mm below the bottom of the rounded rect (and left-aligned with the rounded rect). Draw the number “1” within the circle.  
+* A text label that is 2mm below the bottom of the rounded rect and 2mm to the right of the circle.  
+
+```{r dev='ragg_png'}
+grid.newpage()
+
+# Title object
+title <- textGrob("COVID-19 vaccine:", x = 0, gp = gpar(fontsize = 18), 
+                  just = "left")
+
+# Subtitle object
+subtitle <- textGrob("Estimated volumes and timing of vaccine rollout", 
+                     x = 0, just = "left",
+                     gp = gpar(fontsize = 18, fontface = "bold"))
+
+# caption object
+caption <- textGrob("This illustration shows planned DHB vaccine dose delivery to 30 June 2020. It then shows the\nprojected increased vaccine delivery required to offer two doses of the vaccine to everyone in\nNew Zealand aged 16 or over before the end of the year. Please note, it does not assume a\n specific acceptance level.", 
+                    x = 0, gp = gpar(fontsize = 8), just = "left")
+
+
+# A layout of 6*3
+layout <- grid.layout(nrow = 6, ncol = 3, 
+                      widths = unit(c(3, 1, 3), c("cm", "null", "cm")),
+                      height = unit.c(grobHeight(title) + unit(4, "mm"),
+                                      grobHeight(subtitle) + unit(4, "mm"), 
+                                      grobHeight(caption) + unit(4, "mm"), 
+                                      unit(c(0.25, 1, 0.5), 
+                                           c("in", "null", "in"))))
+# Push the layout
+pushViewport(viewport(width = unit(1, "npc") - unit(2, "cm"),
+                      height = unit(1, "npc") - unit(2, "cm"), 
+                      layout = layout))
+
+
+# 1st row
+pushViewport(viewport(layout.pos.row = 1))
+grid.draw(title)
+
+# 2nd row
+popViewport(n = 1)
+pushViewport(viewport(layout.pos.row = 2))
+grid.draw(subtitle)
+
+# 3rd row
+popViewport(n = 1)
+pushViewport(viewport(layout.pos.row = 3))
+grid.draw(caption)
+
+
+
+# 5th row, 2nd column
+popViewport(n = 1)
+pushViewport(viewport(layout.pos.row = 5, layout.pos.col = 2, 
+                     yscale = c(0, 9.5e6), xscale = c(0, 9)))
+
+# Fill in the plotting region
+grid.rect(gp = gpar(fill = purple1, col = NA))
+
+# Curve before June
+grid.xspline(x = unit(curve$x[1:7], "native"), y = unit(curve$y[1:7], "native"),
+             shape = rep(-1, 7), gp = gpar(col = purple8))
+
+# Filled area under the curve
+grid.xspline(x = unit(c(0, curve$x[1:7], curve$x[7]), "native"), 
+             y = unit(c(0, curve$y[1:7], 0), "native"), open = F,
+             shape = c(0, 0, rep(-1, 5),0, 0), 
+             gp = gpar(fill = purple3, col = NA))
+
+# Curve after June
+grid.xspline(x = unit(curve$x[7:19], "native"), 
+             y = unit(curve$y[7:19], "native"), shape = rep(-1, length(7:19)), 
+             gp = gpar(col = purple8, lty = "dashed"))
+
+# Filled area under the curve
+tile <- pattern(linesGrob(x = c(0, 1), y = c(0, 1), 
+                             gp = gpar(col = purple4)), 
+                width = 0.02, height = 0.02, extend = "repeat")
+
+grid.xspline(x = unit(c(curve$x[7], curve$x[7:19], curve$x[19]), "native"), 
+             y = unit(c(0, curve$y[7:19], 0), "native"), open = F,
+             shape = c(0, 0, rep(-1, length(7:19)-2),0, 0), 
+             gp = gpar(fill = tile, col = NA))
+
+
+
+# Vertical lines for axis
+grid.segments(x0 = c(0,1), y0 = 0, x1 = c(0,1), y1 = 1, 
+              gp = gpar(col = purple5))
+
+# Line at bottom
+grid.segments(x0 = 0, y0 = 0, x1 = 1, y1 = 0, 
+              gp = gpar(col = purple7, lwd = 4, lineend = "butt"))
+
+
+# Vertical lines
+grid.segments(x0 = unit(c(1,3), "native"), y0 = 0, 
+              x1 = unit(c(1,3), "native"), y1 = unit(c(4e6, 6e6), "native"), 
+              gp = gpar(col = purple5))
+
+# Rounded rectangles
+grid.roundrect(x = unit(1, "native") + unit(2, "mm"), 
+               y = unit(4e6, "native"), 
+               width = unit(2, "cm"), height = unit(1, "cm"),
+               gp = gpar(fill = purple3, col = NA), 
+               just = c("left", "top"))
+
+grid.roundrect(x = unit(3, "native") + unit(2, "mm"), 
+               y = unit(6e6, "native"), 
+               width = unit(2, "cm"), height = unit(1, "cm"),
+               gp = gpar(fill = purple3, col = NA), 
+               just = c("left", "top"))
+
+# Annotation for vaccination group
+ann1 <- textGrob("Vaccinating Group 1 and 2\nnow and ongoing", 
+                 x = unit(4, "mm"), y = unit(1, "npc") - unit(4, "mm"), 
+                 just = c("left", "top"), gp = gpar(fontsize = 8))
+
+grid.roundrect(x = unit(2, "mm"), y = unit(1, "npc") - unit(2, "mm"), 
+               width = grobWidth(ann1) + unit(4, "mm"), 
+               height = grobHeight(ann1) + unit(4, "mm"),
+               gp = gpar(fill = purple3, col = NA), 
+               just = c("left", "top"))
+grid.draw(ann1)
+
+
+# Circle and number
+grid.circle(x = unit(5, "mm"), r = unit(3, "mm"), 
+            y = unit(1, "npc") - grobHeight(ann1) - unit(11, "mm"), 
+            gp = gpar(col = NA, fill = purple7))
+
+grid.text(1, x = unit(5, "mm"), r = unit(3, "mm"), 
+          y = unit(1, "npc") - grobHeight(ann1) - unit(11, "mm"), 
+          gp = gpar(fontface = "bold", fontsize = 8))
+
+# Border annotation
+grid.text("Border and MIQ\nworkers, and the\npeople they live with", 
+          x = unit(10, "mm"), 
+          y = unit(1, "npc") - grobHeight(ann1) - unit(8, "mm"), 
+          just = c("left", "top"), gp = gpar(fontsize = 8))
+
+
+# Another Viewport
+popViewport(n = 1)
+pushViewport(viewport(layout.pos.row = 5, layout.pos.col = 1,
+                      # Create a scale
+                      yscale = c(0, 9.5e6)))
+
+y_pos <- 0:8 * 1e6
+# Tick marks on y-axis
+grid.segments(x0 = unit(1, "npc") - unit(4, "mm"), y0 = unit(y_pos, "native"),
+              x1 = unit(1, "npc") - unit(2, "mm"), y1 = unit(y_pos, "native"), 
+              gp = gpar(col = purple6))
+# y-axis labels
+y_lab <- format(y_pos, big.mark=",", scientific = F)
+grid.text(y_lab, x = unit(1, "npc") - unit(6, "mm"), y = unit(y_pos, "native"),
+          just = c("right", "center"), gp = gpar(fontsize = 8))
+
+
+
+# Another Viewport
+popViewport(n = 1)
+pushViewport(viewport(layout.pos.row = 6, layout.pos.col = 2))
+x_tick_pos <- seq(0,1,length.out = 10)
+# Tick marks on y-axis
+grid.segments(x0 = unit(x_tick_pos, "native"),y0 =unit(1, "npc")-unit(4, "mm"), 
+              x1 = unit(x_tick_pos, "native"),y1 =unit(1, "npc")-unit(2, "mm"),
+              gp = gpar(col = purple6))
+# x-axis labels
+x_lab <- month.abb[4:12]
+x_lab_pos <- seq(mean(x_tick_pos[1:2]), mean(x_tick_pos[9:10]), length.out = 9)
+grid.text(x_lab, x = unit(x_lab_pos, "native"), 
+          y = unit(1, "npc") - unit(3, "mm"),
+          just = c("center", "top"), gp = gpar(fontsize = 8))
+
+# Year label
+grid.text(2021, x = x_lab_pos[1], 
+          y = unit(1, "npc") - unit(6, "mm"),
+          just = c("center", "top"), gp = gpar(fontsize = 8, fontface = "bold"))
+
+
+# Go back to the entire plotting area
+popViewport(n=0)
+# logo
+grid.raster(logo, x = 1, y = 0, width = unit(1, "in"), 
+            just = c("right", "bottom"))
+
+```
+
+  
+**6. ** Draw the final result in a page that is 10in wide and 7in high. If your written your code correctly for the previous questions, this should require no changes to your R code.   
+
+You may have to view the image in its own tab to see it at full resolution.    
+```{r dev='ragg_png', fig.width=10, fig.height=7}
+grid.newpage()
+
+# Title object
+title <- textGrob("COVID-19 vaccine:", x = 0, gp = gpar(fontsize = 18), 
+                  just = "left")
+
+# Subtitle object
+subtitle <- textGrob("Estimated volumes and timing of vaccine rollout", 
+                     x = 0, just = "left",
+                     gp = gpar(fontsize = 18, fontface = "bold"))
+
+# caption object
+caption <- textGrob("This illustration shows planned DHB vaccine dose delivery to 30 June 2020. It then shows the\nprojected increased vaccine delivery required to offer two doses of the vaccine to everyone in\nNew Zealand aged 16 or over before the end of the year. Please note, it does not assume a\n specific acceptance level.", 
+                    x = 0, gp = gpar(fontsize = 8), just = "left")
+
+
+# A layout of 6*3
+layout <- grid.layout(nrow = 6, ncol = 3, 
+                      widths = unit(c(3, 1, 3), c("cm", "null", "cm")),
+                      height = unit.c(grobHeight(title) + unit(4, "mm"),
+                                      grobHeight(subtitle) + unit(4, "mm"), 
+                                      grobHeight(caption) + unit(4, "mm"), 
+                                      unit(c(0.25, 1, 0.5), 
+                                           c("in", "null", "in"))))
+# Push the layout
+pushViewport(viewport(width = unit(1, "npc") - unit(2, "cm"),
+                      height = unit(1, "npc") - unit(2, "cm"), 
+                      layout = layout))
+
+
+# 1st row
+pushViewport(viewport(layout.pos.row = 1))
+grid.draw(title)
+
+# 2nd row
+popViewport(n = 1)
+pushViewport(viewport(layout.pos.row = 2))
+grid.draw(subtitle)
+
+# 3rd row
+popViewport(n = 1)
+pushViewport(viewport(layout.pos.row = 3))
+grid.draw(caption)
+
+
+
+# 5th row, 2nd column
+popViewport(n = 1)
+pushViewport(viewport(layout.pos.row = 5, layout.pos.col = 2, 
+                     yscale = c(0, 9.5e6), xscale = c(0, 9)))
+
+# Fill in the plotting region
+grid.rect(gp = gpar(fill = purple1, col = NA))
+
+# Curve before June
+grid.xspline(x = unit(curve$x[1:7], "native"), y = unit(curve$y[1:7], "native"),
+             shape = rep(-1, 7), gp = gpar(col = purple8))
+
+# Filled area under the curve
+grid.xspline(x = unit(c(0, curve$x[1:7], curve$x[7]), "native"), 
+             y = unit(c(0, curve$y[1:7], 0), "native"), open = F,
+             shape = c(0, 0, rep(-1, 5),0, 0), 
+             gp = gpar(fill = purple3, col = NA))
+
+# Curve after June
+grid.xspline(x = unit(curve$x[7:19], "native"), 
+             y = unit(curve$y[7:19], "native"), shape = rep(-1, length(7:19)), 
+             gp = gpar(col = purple8, lty = "dashed"))
+
+# Filled area under the curve
+tile <- pattern(linesGrob(x = c(0, 1), y = c(0, 1), 
+                             gp = gpar(col = purple4)), 
+                width = 0.02, height = 0.02, extend = "repeat")
+
+grid.xspline(x = unit(c(curve$x[7], curve$x[7:19], curve$x[19]), "native"), 
+             y = unit(c(0, curve$y[7:19], 0), "native"), open = F,
+             shape = c(0, 0, rep(-1, length(7:19)-2),0, 0), 
+             gp = gpar(fill = tile, col = NA))
+
+
+
+# Vertical lines for axis
+grid.segments(x0 = c(0,1), y0 = 0, x1 = c(0,1), y1 = 1, 
+              gp = gpar(col = purple5))
+
+# Line at bottom
+grid.segments(x0 = 0, y0 = 0, x1 = 1, y1 = 0, 
+              gp = gpar(col = purple7, lwd = 4, lineend = "butt"))
+
+
+# Vertical lines
+grid.segments(x0 = unit(c(1,3), "native"), y0 = 0, 
+              x1 = unit(c(1,3), "native"), y1 = unit(c(4e6, 6e6), "native"), 
+              gp = gpar(col = purple5))
+
+# Rounded rectangles
+grid.roundrect(x = unit(1, "native") + unit(2, "mm"), 
+               y = unit(4e6, "native"), 
+               width = unit(2, "cm"), height = unit(1, "cm"),
+               gp = gpar(fill = purple3, col = NA), 
+               just = c("left", "top"))
+
+grid.roundrect(x = unit(3, "native") + unit(2, "mm"), 
+               y = unit(6e6, "native"), 
+               width = unit(2, "cm"), height = unit(1, "cm"),
+               gp = gpar(fill = purple3, col = NA), 
+               just = c("left", "top"))
+
+# Annotation for vaccination group
+ann1 <- textGrob("Vaccinating Group 1 and 2\nnow and ongoing", 
+                 x = unit(4, "mm"), y = unit(1, "npc") - unit(4, "mm"), 
+                 just = c("left", "top"), gp = gpar(fontsize = 8))
+
+grid.roundrect(x = unit(2, "mm"), y = unit(1, "npc") - unit(2, "mm"), 
+               width = grobWidth(ann1) + unit(4, "mm"), 
+               height = grobHeight(ann1) + unit(4, "mm"),
+               gp = gpar(fill = purple3, col = NA), 
+               just = c("left", "top"))
+grid.draw(ann1)
+
+
+# Circle and number
+grid.circle(x = unit(5, "mm"), r = unit(3, "mm"), 
+            y = unit(1, "npc") - grobHeight(ann1) - unit(11, "mm"), 
+            gp = gpar(col = NA, fill = purple7))
+
+grid.text(1, x = unit(5, "mm"), r = unit(3, "mm"), 
+          y = unit(1, "npc") - grobHeight(ann1) - unit(11, "mm"), 
+          gp = gpar(fontface = "bold", fontsize = 8))
+
+# Border annotation
+grid.text("Border and MIQ\nworkers, and the\npeople they live with", 
+          x = unit(10, "mm"), 
+          y = unit(1, "npc") - grobHeight(ann1) - unit(8, "mm"), 
+          just = c("left", "top"), gp = gpar(fontsize = 8))
+
+
+# Another Viewport
+popViewport(n = 1)
+pushViewport(viewport(layout.pos.row = 5, layout.pos.col = 1,
+                      # Create a scale
+                      yscale = c(0, 9.5e6)))
+
+y_pos <- 0:8 * 1e6
+# Tick marks on y-axis
+grid.segments(x0 = unit(1, "npc") - unit(4, "mm"), y0 = unit(y_pos, "native"),
+              x1 = unit(1, "npc") - unit(2, "mm"), y1 = unit(y_pos, "native"), 
+              gp = gpar(col = purple6))
+# y-axis labels
+y_lab <- format(y_pos, big.mark=",", scientific = F)
+grid.text(y_lab, x = unit(1, "npc") - unit(6, "mm"), y = unit(y_pos, "native"),
+          just = c("right", "center"), gp = gpar(fontsize = 8))
+
+
+
+# Another Viewport
+popViewport(n = 1)
+pushViewport(viewport(layout.pos.row = 6, layout.pos.col = 2))
+x_tick_pos <- seq(0,1,length.out = 10)
+# Tick marks on y-axis
+grid.segments(x0 = unit(x_tick_pos, "native"),y0 =unit(1, "npc")-unit(4, "mm"), 
+              x1 = unit(x_tick_pos, "native"),y1 =unit(1, "npc")-unit(2, "mm"),
+              gp = gpar(col = purple6))
+# x-axis labels
+x_lab <- month.abb[4:12]
+x_lab_pos <- seq(mean(x_tick_pos[1:2]), mean(x_tick_pos[9:10]), length.out = 9)
+grid.text(x_lab, x = unit(x_lab_pos, "native"), 
+          y = unit(1, "npc") - unit(3, "mm"),
+          just = c("center", "top"), gp = gpar(fontsize = 8))
+
+# Year label
+grid.text(2021, x = x_lab_pos[1], 
+          y = unit(1, "npc") - unit(6, "mm"),
+          just = c("center", "top"), gp = gpar(fontsize = 8, fontface = "bold"))
+
+
+# Go back to the entire plotting area
+popViewport(n=0)
+# logo
+grid.raster(logo, x = 1, y = 0, width = unit(1, "in"), 
+            just = c("right", "bottom"))
+
+```
+
+
+
+# Summary
+In this lab, we used `grid` to produce a vectorized graph of vaccination data. The original data contained the coordinates of the curve at each time point.  
+  
+The aims of the lab were:  
+1. Understand how `grid` can be used to produce vectorized graphs, and its great flexibility in controlling all aspects of the plot;  
+2. Gain proficiency in using `grid`, especially the special shapes, filling patterns and layout;  
+3. Understand that complex plots were created by adding elements gradually.  
+
+
+The `grid` package is a flexible low-level graphical tool that can be used to create all sorts of graphs. This lab specifically focused on the vectorized graphs that are hard to handle by basic R functions. And we used these techniques to re-produce the vaccination data published y the government.  
+
+Especially, `grid.xspline` was useful for producing curves; `pattern` can be used to produce tiling filling patterns; `grid.layout()` is capable of producing matrix layout of graphs. Those are powerful tools to produce complicated graphs.  
